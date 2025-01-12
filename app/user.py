@@ -13,6 +13,27 @@ bp = Blueprint("user", __name__, url_prefix="/users")
 
 @bp.route("/", methods=["POST"])
 def register_user():
+    """
+    Create new user
+    ---
+    tags:
+        - users
+    produces:
+        - application/json
+
+    parameters:
+    - name: user
+      in: body
+      description: Data of user
+      required: true
+      schema:
+        $ref: '#/definitions/UserIn'
+    responses:
+        201:
+            description: User created
+            schema:
+                $ref: '#/definitions/UserOut'
+    """
     json_data = request.json
     try:
         data = user_schema.load(json_data)
@@ -21,7 +42,8 @@ def register_user():
 
     try:
         new_user = User(
-            username=data["username"], password=generate_password_hash(data["password"])
+            username=data["username"],
+            password=generate_password_hash(data["password"], method="pbkdf2"),
         )
         db.session.add(new_user)
         db.session.commit()
@@ -34,6 +56,27 @@ def register_user():
 
 @bp.route("/login", methods=["POST"])
 def login_user():
+    """
+    Login user
+    ---
+    tags:
+        - users
+    produces:
+        - application/json
+
+    parameters:
+    - name: user
+      in: body
+      description: Data of user
+      required: true
+      schema:
+        $ref: '#/definitions/UserIn'
+    responses:
+        201:
+            description: User created
+            schema:
+                $ref: '#/definitions/UserOut'
+    """
     json_data = request.json
     try:
         data = user_schema.load(json_data)
@@ -45,10 +88,3 @@ def login_user():
         return jsonify(error="Invalid password or username"), 401
     access_token = create_access_token(identity=user.username)
     return jsonify(access_token=access_token), 200
-
-
-# @bp.route("/logout", methods=["POST"])
-# def logout_user():
-#     token = request.headers.get("Authorization").split(" ")[1]  # Assuming Bearer token
-#     blacklist.add(token)  # Add token to blacklist
-#     return "", 204
