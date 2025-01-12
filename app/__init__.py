@@ -16,11 +16,6 @@ def create_app():
     app = Flask(__name__, instance_relative_config=True)
     config_type = os.getenv("CONFIG_TYPE", default="app.config.Config")
     app.config.from_object(config_type)
-    # app.config.from_mapping(
-    #     SQLALCHEMY_DATABASE_URI="sqlite:///expenses.db",
-    #     JWT_SECRET_KEY="3afb314dfc68843fe25a261af3afbeea117eb1b960afadafedc249ae12312cab",
-    # )
-    # app.config.from_mapping(SECRET_KEY="dev")
 
     db.init_app(app)
     migrate.init_app(app, db, render_as_batch=True)
