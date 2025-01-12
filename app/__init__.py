@@ -1,0 +1,49 @@
+from flask import Flask, jsonify
+
+from app import expense
+from app.db import db
+from app.migrate import migrate
+from app.swagger_bp import SWAGGER_API_URL, swagger_ui_blueprint
+from app.swagger_utils import build_swagger
+
+
+def create_app():
+    app = Flask(__name__, instance_relative_config=True)
+    app.config.from_mapping(SQLALCHEMY_DATABASE_URI="sqlite:///expenses.db")
+    app.config.from_mapping(SECRET_KEY="dev")
+
+    db.init_app(app)
+    migrate.init_app(app, db, render_as_batch=True)
+
+    @app.route(SWAGGER_API_URL)
+    def spec():
+        return jsonify(build_swagger(app))
+
+    @app.route("/")
+    def home():
+        """
+        Welcome user to main page
+        ---
+        tags:
+            - main page
+        produces:
+            - application/json
+        responses:
+            200:
+                description: Welcome
+                schema:
+                    $ref: '#/definitions/Hello'
+        """
+        return jsonify(message="Hello from API v1")
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return jsonify({"error": "Not Found"}), 404
+
+    @app.errorhandler(500)
+    def server_error(error):
+        return jsonify({"error": "Server Error"}), 500
+
+    app.register_blueprint(expense.bp)
+    app.register_blueprint(swagger_ui_blueprint)
+    return app
