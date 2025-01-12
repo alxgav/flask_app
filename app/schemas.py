@@ -15,3 +15,19 @@ class ExpenseSchema(Schema):
 
 expense_schema = ExpenseSchema()
 expenses_schema = ExpenseSchema(many=True)
+
+
+class UserSchema(Schema):
+    id = fields.Int(dump_only=True)
+    username = fields.Str(
+        required=True,
+        validate=validate.Length(min=1, max=50),
+    )
+    password = fields.Str(
+        required=True,
+        validate=validate.Length(min=4),
+        load_only=True,
+    )
+
+
+user_schema = UserSchema()

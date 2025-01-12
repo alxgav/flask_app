@@ -1,16 +1,22 @@
 from flask import Flask, jsonify
 
-from app import expense
+from app import expense, user
 from app.db import db
 from app.migrate import migrate
+from app.schemas import user_schema
 from app.swagger_bp import SWAGGER_API_URL, swagger_ui_blueprint
 from app.swagger_utils import build_swagger
+
+from app.auth import jwt
 
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(SQLALCHEMY_DATABASE_URI="sqlite:///expenses.db")
-    app.config.from_mapping(SECRET_KEY="dev")
+    app.config.from_mapping(
+        SQLALCHEMY_DATABASE_URI="sqlite:///expenses.db",
+        JWT_SECRET_KEY="3afb314dfc68843fe25a261af3afbeea117eb1b960afadafedc249ae12312cab",
+    )
+    # app.config.from_mapping(SECRET_KEY="dev")
 
     db.init_app(app)
     migrate.init_app(app, db, render_as_batch=True)
@@ -44,6 +50,13 @@ def create_app():
     def server_error(error):
         return jsonify({"error": "Server Error"}), 500
 
+    # register blueprints
     app.register_blueprint(expense.bp)
+    app.register_blueprint(user.bp)
     app.register_blueprint(swagger_ui_blueprint)
+
+    # jwt
+
+    jwt.init_app(app)
+
     return app

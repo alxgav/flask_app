@@ -38,6 +38,41 @@ def build_swagger(app):
                 },
             ],
         },
+        "UserIn": {
+            "type": "object",
+            "discriminator": "userInType",
+            "properties": {
+                "username": {"type": "string"},
+                "password": {"type": "string"},
+            },
+            "example": {
+                "username": "I'm your user",
+                "password": "I'm your password",
+            },
+        },
+        "UserOut": {
+            "type": "object",
+            "discriminator": "userOutType",
+            "properties": {
+                "id": {"type": "number"},
+                "username": {"type": "string"},
+            },
+            "example": {
+                "id": 0,
+                "username": "I'm your user",
+            },
+        },
+        "Unauthorized": {
+            "type": "object",
+            "discriminator": "unauthorizedType",
+            "properties": {"error": {"type": "string"}},
+            "example": {"error": "You don't have permission for this expense"},
+        },
+        "TokenOut": {
+            "type": "object",
+            "discriminator": "tokenOutType",
+            "properties": {"token": {"type": "string"}},
+        },
         "NotFound": {
             "type": "object",
             "discriminator": "notFoundType",

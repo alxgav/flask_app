@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, current_user
 from marshmallow import ValidationError
 
 from app.db import db
@@ -9,6 +10,7 @@ bp = Blueprint("expense", __name__, url_prefix="/expenses")
 
 
 @bp.route("/", methods=["GET"])
+@jwt_required()
 def get_expenses():
     """
     Get list of expenses
@@ -17,6 +19,11 @@ def get_expenses():
         - expenses
     produces:
         - application/json
+    parameters:
+    - name: Authorization
+      in: header
+      description: Bearer token
+      required: true
     responses:
           200:
             description: List of expenses
@@ -25,11 +32,11 @@ def get_expenses():
                 items:
                     $ref: '#/definitions/ExpenseOut'
     """
-    expenses = Expense.query.all()
-    return jsonify(expenses_schema.dump(expenses)), 200
+    return jsonify(expenses_schema.dump(current_user.expenses)), 200
 
 
 @bp.route("/<int:id>", methods=["GET"])
+@jwt_required()
 def get_expense(id):
     """
     get data of expense by id
@@ -39,6 +46,10 @@ def get_expense(id):
     produces:
         - application/json
     parameters:
+    - name: Authorization
+      in: header
+      description: Bearer token
+      required: true
     - name: id
       in: path
       description: expense id
@@ -55,10 +66,13 @@ def get_expense(id):
                 $ref: '#/definitions/NotFound'
     """
     expense = db.get_or_404(Expense, id)
+    if expense.user_id != current_user.id:
+        return jsonify(error="You don't have permission for this expense"), 401
     return jsonify(expense_schema.dump(expense)), 200
 
 
 @bp.route("/", methods=["POST"])
+@jwt_required()
 def create_expenses():
     """
     Create new expense
@@ -67,7 +81,12 @@ def create_expenses():
         - expenses
     produces:
         - application/json
+
     parameters:
+    - name: Authorization
+      in: header
+      description: Bearer token
+      required: true
     - name: expense
       in: body
       description: Data of expense
@@ -86,13 +105,16 @@ def create_expenses():
     except ValidationError as err:
         return err.messages, 422
 
-    new_expense = Expense(title=data["title"], amount=data["amount"])
+    new_expense = Expense(
+        title=data["title"], amount=data["amount"], user_id=current_user.id
+    )
     db.session.add(new_expense)
     db.session.commit()
     return jsonify(expense_schema.dump(new_expense)), 201
 
 
 @bp.route("/<int:id>", methods=["PATCH"])
+@jwt_required()
 def update_expenses(id):
     """
     update data of expense by id
@@ -102,6 +124,10 @@ def update_expenses(id):
     produces:
         - application/json
     parameters:
+    - name: Authorization
+      in: header
+      description: Bearer token
+      required: true
     - name: id
       in: path
       description: idy of expense
@@ -124,6 +150,8 @@ def update_expenses(id):
                 $ref: '#/definitions/NotFound'
     """
     expense = db.get_or_404(Expense, id)
+    if expense.user_id != current_user.id:
+        return jsonify(error="You don't have permission for this expense"), 401
     json_data = request.json
     try:
         data = expense_schema.load(json_data, partial=True)
@@ -141,10 +169,14 @@ def delete_expenses(id):
     Delete expense
     ---
     tags:
-        - expense
+        - expenses
     produces:
         - application/json
     parameters:
+    - name: Authorization
+      in: header
+      description: Bearer token
+      required: true
     - name: id
       in: path
       description: ID of the expense
@@ -159,6 +191,8 @@ def delete_expenses(id):
                 $ref: '#/definitions/NotFound'
     """
     expense = db.session.get(Expense, id)
+    if expense.user_id != current_user.id:
+        return jsonify(error="You don't have permission for this expense"), 401
     if expense is None:
         return {"message": "Expense not found"}, 404
 

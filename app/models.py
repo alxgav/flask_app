@@ -17,9 +17,9 @@ class Expense(db.Model):
 
 class User(db.Model):
     id: Mapped[int] = mapped_column(primary_key=True)
-    username: Mapped[str] = mapped_column(String(50))
+    username: Mapped[str] = mapped_column(String(50), unique=True)
     password: Mapped[str]
-    expenses: Mapped[Expense] = relationship(back_populates="user")
+    expenses: Mapped[list[Expense]] = relationship(back_populates="user")
 
     def __repr__(self):
         return f"User(username={self.username})"
